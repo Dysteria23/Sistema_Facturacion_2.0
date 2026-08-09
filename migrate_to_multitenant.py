@@ -1,23 +1,4 @@
-"""
-Migra tu base de datos actual (single-tenant, contraseñas en texto plano)
-al nuevo esquema multi-tenant con contraseñas hasheadas.
 
-Uso:
-    python migrate_to_multitenant.py
-
-Qué hace, en orden:
-1. Renombra tus tablas actuales (usuarios, productos, ventas) a *_legacy.
-2. Crea el nuevo esquema (tenants + empresa_id en cada tabla).
-3. Crea UN tenant para tu cliente actual (te pregunta nombre y slug).
-4. Copia usuarios re-hasheando sus contraseñas de texto plano a hash seguro.
-5. Copia productos y el historial completo de ventas, respetando los ids
-   nuevos de producto.
-6. NO borra las tablas *_legacy — quedan como respaldo. Bórralas a mano
-   cuando confirmes que la app funciona correctamente con el nuevo esquema.
-
-Es seguro correrlo una sola vez: si detecta que el esquema multi-tenant
-ya existe, no hace nada.
-"""
 import sys
 
 from database import conectar, inicializar_db
