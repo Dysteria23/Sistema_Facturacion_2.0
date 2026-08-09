@@ -1,16 +1,4 @@
-"""
-Lógica de negocio del sistema de facturación (multi-tenant).
 
-Este módulo es el único que toca reglas de negocio: validación de usuarios,
-catálogo de productos, registro de ventas con control de stock, reportes y
-respaldos. `app.py` solo orquesta HTTP; toda la lógica real vive aquí para
-que haya un solo lugar donde razonar sobre "qué significa una venta válida".
-
-Todas las funciones reciben `empresa_id` explícito y lo usan en cada WHERE:
-esa es la aislación entre tenants (fila por fila, no por base de datos
-separada). Ninguna consulta a `productos`, `ventas` o `usuarios` debe
-faltarle ese filtro — es el borde de seguridad multi-tenant.
-"""
 import os
 import sqlite3
 import shutil
