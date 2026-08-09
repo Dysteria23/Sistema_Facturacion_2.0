@@ -31,9 +31,7 @@ def obtener_tenant_por_slug(slug):
 # --------------------------------------------------------------- Usuarios --
 
 def validar_usuario(empresa_id, usuario, password):
-    """Devuelve el usuario si las credenciales son correctas y la cuenta
-    está activa; None en cualquier otro caso (usuario inexistente,
-    contraseña incorrecta, cuenta desactivada)."""
+
     if not usuario or not password:
         return None
     conn = conectar()
