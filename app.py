@@ -34,10 +34,7 @@ login_manager.init_app(app)
 
 
 class User(UserMixin):
-    """Antes había un objeto User de flask_login Y un diccionario `session`
-    con usuario/rol duplicados. Ahora solo existe este objeto: current_user
-    es la única fuente de verdad de quién está logueado y a qué empresa
-    pertenece."""
+   
 
     def __init__(self, id, username, rol, empresa_id):
         self.id = id
