@@ -58,9 +58,7 @@ def inicializar_db():
 
 
 def seed_demo_data():
-    """Crea un tenant y un admin de demo, SOLO si la base está completamente
-    vacía (instalación nueva de desarrollo). Si ya tienes datos de un cliente
-    real, usa migrate_to_multitenant.py en vez de esto."""
+   
     from auth import hash_password
 
     conn = conectar()
