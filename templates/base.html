@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Farmacia Pérez{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+      // Adjunta el token CSRF a cualquier fetch() que mute datos (POST/PUT/PATCH/DELETE),
+      // como /api/venta. Así app.js no necesita saber nada de CSRF: esto corre antes
+      // de que el <script defer> de abajo se ejecute.
+      (function () {
+        var token = document.querySelector('meta[name="csrf-token"]').content;
+        var originalFetch = window.fetch;
+        window.fetch = function (input, init) {
+          init = init || {};
+          var method = (init.method || 'GET').toUpperCase();
+          if (method !== 'GET' && method !== 'HEAD') {
+            init.headers = new Headers(init.headers || {});
+            if (!init.headers.has('X-CSRFToken')) {
+              init.headers.set('X-CSRFToken', token);
+            }
+          }
+          return originalFetch(input, init);
+        };
+      })();
+    </script>
+    <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      {% if current_user.is_authenticated %}
+      <aside class="sidebar">
+        <a class="brand" href="{{ url_for('ventas') }}">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2v20M17 15H7M17 9H7M7 15h10M7 9h10"></path>
+          </svg>
+          <div>
+            Farmacia <b>Pérez</b>
+            <small>Gestión inteligente</small>
+          </div>
+        </a>
+        <nav>
+          <a class="{{ 'active' if request.endpoint == 'ventas' else '' }}" href="{{ url_for('ventas') }}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span>Punto de venta</span>
+          </a>
+          {% if current_user.rol == 'admin' %}
+          <a class="{{ 'active' if request.endpoint == 'inventario' else '' }}" href="{{ url_for('inventario') }}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            <span>Inventario</span>
+          </a>
+          <a class="{{ 'active' if request.endpoint in ['reportes', 'reporte_pdf'] else '' }}" href="{{ url_for('reportes') }}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            <span>Reportes</span>
+          </a>
+          <a class="{{ 'active' if request.endpoint == 'admin_usuarios' else '' }}" href="{{ url_for('admin_usuarios') }}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Usuarios</span>
+          </a>
+          {% endif %}
+          <a class="{{ 'active' if request.endpoint == 'cierre' else '' }}" href="{{ url_for('cierre') }}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Cierre de caja</span>
+          </a>
+        </nav>
+        <div class="profile">
+          <span>{{ current_user.username[0]|upper }}</span>
+          <div>
+            <b>{{ current_user.username }}</b>
+            <small>{{ current_user.rol|title }}</small>
+          </div>
+          <a href="{{ url_for('logout') }}" title="Salir" class="logout-btn">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </a>
+        </div>
+      </aside>
+      {% endif %}
+      <main class="content">
+        <div class="topbar-controls">
+          <label class="theme-switch">
+            <input type="checkbox" id="themeToggle" aria-label="Cambiar tema" />
+            <span class="slider"></span>
+            <span class="theme-label">Modo oscuro</span>
+          </label>
+        </div>
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+        <div class="toast {{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </body>
+</html>

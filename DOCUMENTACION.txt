@@ -1,0 +1,121 @@
+FARMACIA PÉREZ — SISTEMA DE FACTURACIÓN
+
+
+1. QUÉ ES ESTE PAQUETE
+------------------------
+Sistema de punto de venta multi-tenant  para farmacias,
+en Flask + SQLite. Cada empresa (tenant) tiene su propio login, catálogo
+de productos, historial de ventas y usuarios, aislados por la columna
+empresa_id en cada tabla.
+
+Módulos:
+  app.py                  Rutas HTTP, sesión (Flask-Login), CSRF.
+  auth.py                 Hash y verificación de contraseñas (werkzeug).
+  database.py             Esquema SQLite y creación/semilla inicial.
+  logic.py                TODA la lógica de negocio (ver sección 2).
+  migrate_to_multitenant.py  Migración de una base single-tenant vieja.
+  templates/*.html        7 plantillas Jinja2.
+  static/css/styles.css   Estilos (dirección "botica": verde pino +
+                           papel + ámbar, precios en monoespaciado).
+  static/js/app.js        Carrito, modales, tema oscuro, cierre de caja.
+
+2. SOBRE logic.py (IMPORTANTE — LEE ESTO)
+------------------------------------------
+En la carga que me hiciste, logic.py NO estaba disponible como código
+fuente: solo existía como bytecode compilado para Python 3.14
+(logic_cpython-314.pyc). No pude decompilarlo — ese formato de bytecode
+es demasiado nuevo (Python 3.14 aún no tiene decompiladores maduros) y
+tampoco tengo acceso a red en mi entorno para intentarlo con otra
+herramienta.
+
+Reconstruí logic.py desde cero, a partir del contrato que ya usan
+app.py, database.py y las 7 plantillas (nombres de función exactos,
+parámetros, columnas de la base de datos, mensajes de flash esperados,
+y reglas ya visibles como "si el nombre del producto ya existe, se suma
+el stock" o los umbrales de stock bajo/crítico ≤10 / ≤3 que ya estaban
+en inventario.html).
+
+Si tu logic.py ORIGINAL tenía reglas de negocio que no son deducibles
+del contrato visible (por ejemplo: impuestos, descuentos, redondeos
+particulares, límites de crédito, integración con algo externo), esta
+reconstrucción NO las tiene — no existía forma de adivinarlas sin
+inventar comportamiento financiero, y preferí ser explícito sobre esto
+en vez de fabricarlo. Compara esta versión contra tu original (si lo
+recuperas) antes de usarla con datos reales de clientes.
+
+Reglas de negocio implementadas en esta reconstrucción:
+  - Venta: transacción atómica (BEGIN IMMEDIATE): o se descuenta todo
+    el stock y se registran todas las líneas, o no se toca nada.
+  - Venta: líneas repetidas del mismo producto en un carrito se
+    combinan antes de validar stock.
+  - Venta: rechaza carrito vacío, cantidades ≤0, productos inexistentes
+    o de otro tenant, y stock insuficiente (con VentaError legible).
+  - Producto duplicado por nombre: suma el stock en vez de duplicar
+    (coincide con el aviso ya visible en inventario.html).
+  - Eliminar producto / usuario: desactivación lógica (activo=0), no
+    borrado físico — porque ventas.producto_id referencia productos y
+    un DELETE real rompería el historial de ventas ya facturadas.
+  - No se puede desactivar al último administrador activo de una
+    empresa (evita quedarte sin acceso de admin).
+  - Reportes: diario / semanal (7 días) / mensual (desde el 1°) /
+    anual (desde el 1 de enero), todo filtrado por empresa_id.
+  - low_stock_products: umbral ≤10 unidades (coincide con "Bajo" +
+    "Crítico" en inventario.html).
+
+3. VALIDACIÓN QA REALIZADA
+----------------------------
+No pude levantar el servidor Flask completo end-to-end porque
+Flask-Login y Flask-WTF no están instalados en mi entorno de pruebas y
+no tengo acceso a red para instalarlos (ni pip ni ningún gestor de
+paquetes). Lo que SÍ validé de forma directa y automatizada:
+
+  a) Sintaxis: los 5 archivos .py compilan sin errores
+     (python -m py_compile).
+  b) Plantillas: las 7 plantillas .html renderizan sin errores Jinja2
+     con datos de prueba (variables, bucles, condicionales, url_for).
+  c) Lógica de negocio — 38 pruebas automatizadas contra logic.py +
+     database.py reales (SQLite real, no mocks), incluyendo:
+       - Login correcto / incorrecto / usuario ajeno a otro tenant.
+       - Aislación multi-tenant: una empresa nunca ve ni puede vender
+         productos de otra.
+       - Creación de producto duplicado suma stock correctamente.
+       - Ventas: cálculo de total, descuento de stock, rollback
+         completo ante error (nada se descuenta a medias).
+       - Casos de abuso: carrito vacío, cantidad negativa/cero, id no
+         numérico, producto inexistente, stock insuficiente, venta de
+         producto de otro tenant.
+       - PRUEBA DE ESTRÉS: 60 hilos concurrentes comprando el mismo
+         producto con stock=30 → resultado exacto: 30 ventas
+         aprobadas, 30 rechazadas, 0 errores inesperados, stock final
+         0 (nunca negativo). Confirma que el bloqueo de transacción
+         (BEGIN IMMEDIATE) evita sobreventa por condición de carrera.
+       - Generación de PDF de reporte (con y sin datos).
+       - Backup de base de datos.
+       - Borrado lógico de producto preserva su historial de ventas.
+     Resultado: 38/38 pruebas pasaron.
+
+  d) NO validado (por falta de dependencias/red en mi entorno):
+       - El flujo HTTP real de principio a fin (login vía navegador,
+         cookies de sesión, CSRF real en el POST del navegador).
+       - Comportamiento visual real en navegador (until you run it).
+     Tú debes correr la app localmente (sección 4) y probar el flujo
+     de login → venta → cierre → reportes → inventario → usuarios con
+     tus propios ojos antes de usarla en producción.
+
+4. CÓMO CORRERLA
+-------------------
+  1. python3 -m venv venv && source venv/bin/activate  (o venv\Scripts\activate en Windows)
+  2. pip install -r requirements.txt
+  3. export FLASK_SECRET="algo-largo-y-aleatorio"   (Windows: set FLASK_SECRET=...)
+  4. python app.py
+  5. Abre http://localhost:5001 — entra con: empresa "demo", usuario
+     "admin", contraseña "cambiar123" (cámbiala de inmediato).
+
+Para producción define además FLASK_ENV=production — app.py se niega a
+arrancar en producción sin FLASK_SECRET definido (ya lo tenía así tu
+código original, lo dejé intacto).
+
+5. LIMITACIONES CONOCIDAS / QUÉ FALTA POR TU LADO
+----------------------------------------------------
+Ver PENDIENTES.txt (archivo aparte) para la lista completa de lo que
+te recomiendo implementar o revisar antes de producción.

@@ -1,0 +1,60 @@
+FARMACIA PÉREZ — QUÉ TE FALTA POR IMPLEMENTAR
+================================================
+
+CRÍTICO — antes de usar con clientes reales
+--------------------------------------------
+1. Compara logic.py (reconstruido) contra tu lógica original si la
+   recuperas. Yo no tenía el código fuente real, solo bytecode de
+   Python 3.14 que no pude decompilar — ver DOCUMENTACION.txt sección 2.
+   Presta especial atención a: cálculo de impuestos (si aplica en RD,
+   ITBIS), redondeos, y cualquier regla de descuentos que tu negocio
+   use y que no esté visible en las plantillas HTML.
+
+2. Define FLASK_SECRET como variable de entorno real (no uses el valor
+   de desarrollo en producción — app.py ya se niega a arrancar sin él
+   si FLASK_ENV=production, pero confírmalo).
+
+3. Cambia la contraseña demo (admin / cambiar123) antes de dar acceso
+   a un cliente real, o mejor, crea el usuario real y borra/desactiva
+   el demo desde Gestión de Usuarios.
+
+4. Prueba el flujo completo en navegador tú mismo: login, agregar
+   productos al carrito, cobrar, cerrar caja, generar reporte PDF,
+   crear/editar/eliminar producto, crear/editar rol/borrar usuario,
+   modo oscuro. Yo validé la lógica de negocio con pruebas automatizadas
+   (38/38 pasaron, incluida una prueba de estrés con 60 compras
+   concurrentes) pero no pude levantar el servidor HTTP completo en mi
+   entorno por falta de Flask-Login/Flask-WTF sin acceso a red.
+
+RECOMENDADO — mejoras de robustez
+------------------------------------
+5. Backups automáticos: logic.realizar_backup() ya existe y funciona,
+   pero solo se dispara si un admin hace clic en "Descargar respaldo".
+   Considera un cron/tarea programada que llame a esa misma función
+   diariamente y guarde el archivo fuera del servidor (otro disco, S3,
+   etc.) — si el servidor se cae, el backup local no sirve de nada.
+
+6. HTTPS en producción: el login manda usuario/contraseña por POST;
+   sin TLS viaja en claro. Pon la app detrás de nginx/Caddy con
+   certificado, o en un hosting que lo haga por ti.
+
+7. Rate limiting en /login: ahora mismo no hay límite de intentos.
+   Vale la pena Flask-Limiter u otro control para frenar fuerza bruta
+   contra el login (afecta a todos los tenants, no solo a uno).
+
+8. Registro de auditoría: quién eliminó qué producto, quién cambió el
+   rol de quién y cuándo. Ahora mismo el borrado es lógico (activo=0)
+   así que el dato no se pierde, pero no queda quién lo hizo.
+
+9. Paginación en /reportes e /inventario: si un tenant acumula miles de
+   productos o ventas, las tablas actuales cargan todo de una vez.
+
+10. Exportar reporte a Excel/CSV además de PDF, si tus clientes lo piden.
+
+NO IMPLEMENTADO A PROPÓSITO (fuera de alcance de lo que pediste)
+--------------------------------------------------------------------
+- Recuperación de contraseña por correo/SMS (no había endpoint para
+  esto en tu app.py original).
+- Multi-moneda (todo asume RD$).
+- Roles más granulares que admin/cajero (son los dos únicos que ya
+  usaban tus plantillas).
