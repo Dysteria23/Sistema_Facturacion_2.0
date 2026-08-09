@@ -103,9 +103,7 @@ def actualizar_rol_usuario(empresa_id, uid, nuevo_rol):
 
 
 def borrar_usuario(empresa_id, uid):
-    """Desactiva (no borra físicamente, para no romper el historial de
-    ventas ni auditoría). Protección: nunca desactiva al último admin
-    activo de la empresa, o la cuenta quedaría sin nadie que administre."""
+   
     conn = conectar()
     fila = conn.execute(
         "SELECT rol FROM usuarios WHERE id = ? AND empresa_id = ? AND activo = 1",
@@ -189,9 +187,7 @@ def actualizar_producto(empresa_id, pid, nombre, stock, precio):
 
 
 def borrar_producto(empresa_id, pid):
-    """Desactiva en vez de borrar: `ventas.producto_id` referencia esta fila
-    (FK), así que un DELETE físico rompería el historial de ventas ya
-    registradas para ese producto."""
+  
     conn = conectar()
     conn.execute(
         "UPDATE productos SET activo = 0 WHERE id = ? AND empresa_id = ?",
@@ -215,10 +211,7 @@ def low_stock_products(empresa_id, umbral=10):
 # ------------------------------------------------------------------ Venta --
 
 def registrar_venta(empresa_id, items):
-    """Registra una venta con uno o más productos, valida stock y calcula
-    el total dentro de una sola transacción: o se descuenta todo el stock y
-    se insertan todas las líneas, o no se toca nada. `items` es una lista de
-    dicts con 'id' y 'cantidad', como los arma el carrito en ventas.html."""
+   
     if not items:
         raise VentaError("El carrito está vacío.")
 
