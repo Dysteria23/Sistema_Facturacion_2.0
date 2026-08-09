@@ -9,9 +9,7 @@ from auth import hash_password, verify_password
 
 
 class VentaError(Exception):
-    """Error de negocio al registrar una venta (carrito vacío, stock
-    insuficiente, producto inexistente). Se muestra tal cual al usuario,
-    así que el mensaje siempre va en español y sin detalles internos."""
+   
     pass
 
 
