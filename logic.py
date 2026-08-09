@@ -215,9 +215,8 @@ def registrar_venta(empresa_id, items):
     if not items:
         raise VentaError("El carrito está vacío.")
 
-    # Combina líneas repetidas del mismo producto antes de validar stock,
-    # para no rechazar por error un carrito con el mismo producto agregado
-    # dos veces por separado.
+   #rechazar por error un carrito con el mismo producto agregado
+
     cantidades = {}
     for item in items:
         try:
